@@ -1,0 +1,3462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión - Tarjetas PMR</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #34a853;
+            --danger: #ea4335;
+            --warning: #fbbc05;
+            --light: #f8f9fa;
+            --dark: #202124;
+            --gray: #5f6368;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), #0d47a1);
+            color: white;
+            padding: 20px 0;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .tab.active {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background-color: #e8f0fe;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--gray);
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border 0.3s ease;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        }
+        
+        .file-upload {
+            border: 2px dashed #dadce0;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+        
+        .file-upload:hover {
+            border-color: var(--primary);
+            background-color: #f8faff;
+        }
+        
+        .file-upload i {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0d62d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .card-footer {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background-color: #fff8e1;
+            color: #f57c00;
+        }
+        
+        .status-approved {
+            background-color: #e8f5e9;
+            color: var(--secondary);
+        }
+        
+        .status-rejected {
+            background-color: #ffebee;
+            color: var(--danger);
+        }
+        
+        .status-inactive {
+            background-color: #f5f5f5;
+            color: var(--gray);
+        }
+        
+        /* Tarjeta PMR - Diseño Europeo Actualizado */
+        .european-card-preview {
+            width: 210mm;
+            height: 148mm;
+            background: #ADF3F7;
+            border-radius: 8px;
+            padding: 15mm;
+            color: #003399;
+            position: relative;
+            margin: 20px auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-title-european {
+            font-size: 14pt;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 2mm;
+            color: #003399;
+        }
+        
+        .card-subtitle-european {
+            font-size: 10pt;
+            text-align: center;
+            margin-bottom: 8mm;
+            color: #003399;
+        }
+        
+        .card-content-european {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-grow: 1;
+        }
+        
+        .left-section-european {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 50%;
+        }
+        
+        .wheelchair-symbol-container {
+            background: #002366;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10mm;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .wheelchair-symbol-european {
+            font-size: 100pt;
+            color: white;
+        }
+        
+        .card-details-european {
+            display: flex;
+            flex-direction: column;
+            gap: 3mm;
+            width: 100%;
+        }
+        
+        .detail-item-european {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .detail-label-european {
+            font-size: 7pt;
+            color: #003399;
+            margin-bottom: 0.3mm;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        
+        .detail-value-european {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #003399;
+            border-bottom: 1px solid #003399;
+            padding-bottom: 0.3mm;
+            width: 100%;
+        }
+        
+        .model-text-left {
+            font-size: 7pt;
+            color: #003399;
+            text-align: left;
+            margin-top: 5mm;
+            width: 100%;
+        }
+        
+        .right-section-european {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 45%;
+            position: relative;
+        }
+        
+        .european-stars-container {
+            position: relative;
+            width: 80mm;
+            height: 80mm;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 5mm;
+        }
+        
+        .european-stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .star {
+            position: absolute;
+            color: white;
+            font-size: 16pt;
+        }
+        
+        .languages-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 85%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .language-item {
+            font-size: 7pt;
+            color: #003399;
+            text-align: center;
+            line-height: 1.2;
+            margin: 1.5px 0;
+            font-weight: 500;
+        }
+        
+        .country-code-background {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48pt;
+            font-weight: bold;
+            color: rgba(0, 51, 153, 0.3);
+            z-index: 1;
+        }
+        
+        .document-list {
+            margin-top: 20px;
+        }
+        
+        .document-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .document-item:last-child {
+            border-bottom: none;
+        }
+        
+        .document-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .search-bar input {
+            flex: 1;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        .preview-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Estilos para la parte trasera de la tarjeta */
+        .card-back-container {
+            width: 210mm;
+            height: 148mm;
+            background: #ADF3F7;
+            border-radius: 8px;
+            padding: 15mm;
+            color: #003399;
+            position: relative;
+            margin: 20px auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: none;
+            flex-direction: column;
+        }
+        
+        .card-back-content {
+            padding: 15px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-back-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .card-back-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #003399;
+            text-align: right;
+        }
+        
+        .back-content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            flex-grow: 1;
+        }
+        
+        .personal-data-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .photo-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .photo-placeholder {
+            width: 120px;
+            height: 150px;
+            background-color: #f8f9fa;
+            border: 2px solid #003399;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 12px;
+            text-align: center;
+            overflow: hidden;
+        }
+        
+        .photo-placeholder img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+        
+        .signature-placeholder {
+            width: 200px;
+            height: 60px;
+            background-color: #f8f9fa;
+            border: 1px solid #003399;
+            border-bottom: 2px solid #003399;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .field-back {
+            margin-bottom: 12px;
+        }
+        
+        .field-label-back {
+            font-size: 10px;
+            color: #003399;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        
+        .field-value-back {
+            font-size: 12px;
+            font-weight: bold;
+            color: #003399;
+            border-bottom: 1px solid #003399;
+            padding-bottom: 3px;
+            min-height: 18px;
+        }
+        
+        .toggle-button {
+            background-color: #003399;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            transition: background-color 0.3s;
+        }
+        
+        .toggle-button:hover {
+            background-color: #002266;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Estilos para el código QR */
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: white;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .qr-code {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .qr-code img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .qr-label {
+            font-size: 8px;
+            color: #003399;
+            text-align: center;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-tabs {
+                flex-direction: column;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .european-card-preview, .card-back-container {
+                transform: scale(0.7);
+                transform-origin: top center;
+            }
+            
+            .back-content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Modal para generar PDF */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+        }
+
+        /* Estilos para el selector de firmantes */
+        .firmante-selector {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        
+        .firmante-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 5px;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .cargando-firmantes {
+            color: var(--gray);
+            font-style: italic;
+        }
+
+        /* Gestión de archivos */
+        .file-management {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .data-table th {
+            background-color: #f5f5f5;
+            font-weight: 600;
+        }
+
+        .data-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .file-status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .file-status.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+
+        .file-status.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+
+        .file-status.info {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #2196f3;
+        }
+
+        .file-info {
+            background: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border-left: 4px solid #2196f3;
+            margin: 10px 0;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #1565c0;
+        }
+
+        .instruction-step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .step-number {
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-content strong {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+
+        .step-content p {
+            margin: 5px 0;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .dni-help {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        /* Estilos para la página de verificación */
+        .verificacion-container {
+            display: none;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .verificacion-resultado {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .verificacion-exitosa {
+            background: #e8f5e9;
+            border-left: 4px solid #34a853;
+        }
+
+        .verificacion-error {
+            background: #ffebee;
+            border-left: 4px solid #ea4335;
+        }
+        
+        /* Indicador de conexión */
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .connection-online {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        
+        .connection-offline {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+        
+        .connection-syncing {
+            background-color: #fff8e1;
+            color: #f57c00;
+            border: 1px solid #ffb300;
+        }
+        
+        /* Nuevos estilos para vista previa de PDF */
+        .pdf-preview-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pdf-preview-content {
+            background: white;
+            border-radius: 10px;
+            width: 90%;
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pdf-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            background: #f8f9fa;
+        }
+
+        .pdf-preview-body {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+        }
+
+        .pdf-preview-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            background: #f8f9fa;
+        }
+
+        .pdf-preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .pdf-preview-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .close-preview {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+        }
+
+        .pdf-preview-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        /* Estilos para la tarjeta en PDF */
+        .pdf-tarjeta-container {
+            width: 210mm;
+            height: 148mm;
+            background: #ADF3F7;
+            border-radius: 8px;
+            padding: 15mm;
+            color: #003399;
+            position: relative;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pdf-resolucion-container {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            padding: 20mm;
+            color: #333;
+            margin: 0 auto;
+            font-family: Arial, sans-serif;
+        }
+
+        .pdf-resolucion-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #003399;
+            padding-bottom: 15px;
+        }
+
+        .pdf-resolucion-body {
+            line-height: 1.6;
+        }
+
+        .pdf-resolucion-footer {
+            margin-top: 40px;
+            text-align: right;
+        }
+
+        .pdf-firma-area {
+            margin-top: 60px;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            width: 60%;
+            float: right;
+        }
+        
+        /* Indicador de carga */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            flex-direction: column;
+            color: white;
+        }
+        
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Nuevos estilos para el modal de recogida */
+        .recogida-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .recogida-content {
+            background: white;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .recogida-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        
+        .recogida-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .close-recogida {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+        }
+        
+        .recogida-body {
+            margin-bottom: 20px;
+        }
+        
+        .recogida-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        
+        .recogida-document {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+        }
+        
+        .recogida-document h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        
+        .recogida-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .recogida-field {
+            margin-bottom: 10px;
+        }
+        
+        .recogida-label {
+            font-weight: bold;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        .recogida-value {
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-height: 20px;
+        }
+        
+        .recogida-signature {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .signature-area {
+            width: 45%;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 60px;
+            padding-top: 5px;
+        }
+        
+        .recogida-date {
+            text-align: right;
+            margin-top: 20px;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .recogida-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .recogida-signature {
+                flex-direction: column;
+            }
+            
+            .signature-area {
+                width: 100%;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Indicador de estado de conexión -->
+    <div id="connection-status" class="connection-status connection-online">
+        <i class="fas fa-cloud"></i> <span id="connection-text">Conectado</span>
+    </div>
+    
+    <!-- Indicador de carga -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Generando PDF, por favor espere...</p>
+    </div>
+
+    <!-- Contenedor principal (siempre visible) -->
+    <div class="container" id="main-container">
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <div>
+                        <h1>Gestión de Tarjetas PMR</h1>
+                        <p>Sistema de expedición para personas con movilidad reducida</p>
+                    </div>
+                </div>
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i> Administrador
+                </div>
+            </div>
+        </header>
+        
+        <div class="nav-tabs">
+            <div class="tab active" data-tab="dashboard">Dashboard</div>
+            <div class="tab" data-tab="nueva">Nueva Solicitud</div>
+            <div class="tab" data-tab="gestion">Gestión de Tarjetas</div>
+            <div class="tab" data-tab="expedicion">Expedición</div>
+            <div class="tab" data-tab="verificacion">Verificación QR</div>
+        </div>
+        
+        <!-- Dashboard -->
+        <div class="tab-content active" id="dashboard">
+            <h2>Resumen del Sistema</h2>
+            <div class="stats-container">
+                <div class="stat-card">
+                    <i class="fas fa-id-card" style="color: #1a73e8; font-size: 2rem;"></i>
+                    <div class="stat-value" id="total-tarjetas">0</div>
+                    <div class="stat-label">Tarjetas Activas</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-clock" style="color: #fbbc05; font-size: 2rem;"></i>
+                    <div class="stat-value" id="solicitudes-pendientes">0</div>
+                    <div class="stat-label">Solicitudes Pendientes</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle" style="color: #34a853; font-size: 2rem;"></i>
+                    <div class="stat-value" id="expedidas-mes">0</div>
+                    <div class="stat-label">Expedidas este mes</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-exclamation-triangle" style="color: #ea4335; font-size: 2rem;"></i>
+                    <div class="stat-value" id="renovaciones-pendientes">0</div>
+                    <div class="stat-label">Renovaciones Pendientes</div>
+                </div>
+            </div>
+            
+            <h3>Actividad Reciente</h3>
+            <div class="card-grid" id="actividad-reciente">
+                <!-- Las tarjetas se cargarán dinámicamente -->
+            </div>
+        </div>
+        
+        <!-- Nueva Solicitud -->
+        <div class="tab-content" id="nueva">
+            <h2>Nueva Solicitud de Tarjeta PMR</h2>
+            
+            <form id="solicitud-form">
+                <div class="form-group">
+                    <label for="nombre">Nombre *</label>
+                    <input type="text" id="nombre" name="nombre" placeholder="Ej: Alma" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="apellidos">Apellidos *</label>
+                    <input type="text" id="apellidos" name="apellidos" placeholder="Ej: Feijo Lopez" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dni">DNI/NIE *</label>
+                    <input type="text" id="dni" name="dni" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="fechaNacimiento">Fecha de Nacimiento</label>
+                    <input type="date" id="fechaNacimiento" name="fechaNacimiento">
+                </div>
+                
+                <div class="form-group">
+                    <label for="direccion">Dirección</label>
+                    <input type="text" id="direccion" name="direccion">
+                </div>
+                
+                <div class="form-group">
+                    <label for="telefono">Teléfono</label>
+                    <input type="tel" id="telefono" name="telefono">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="estado">Estado</label>
+                    <select id="estado" name="estado">
+                        <option value="activa">Activa</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="inactiva">Inactiva</option>
+                        <option value="rechazada">Rechazada</option>
+                    </select>
+                </div>
+                
+                <h3>Documentación Requerida</h3>
+                
+                <div class="form-group">
+                    <label>Fotografía del Solicitante</label>
+                    <div class="file-upload" id="foto-upload-area">
+                        <i class="fas fa-camera"></i>
+                        <p>Haga clic para subir fotografía</p>
+                        <p><small>La imagen debe tener el mismo nombre que el DNI</small></p>
+                        <input type="file" id="foto-input" name="foto" accept=".jpg,.jpeg,.png" style="display: none;">
+                    </div>
+                    <div id="foto-preview" style="margin-top: 10px;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Dictamen de Reconocimiento (PDF)</label>
+                    <div class="file-upload" id="dictamen-upload">
+                        <i class="fas fa-file-pdf"></i>
+                        <p>Haga clic para subir dictamen médico</p>
+                        <input type="file" id="dictamen" name="dictamen" accept=".pdf" style="display: none;">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Volante de Empadronamiento (PDF)</label>
+                    <div class="file-upload" id="empadronamiento-upload">
+                        <i class="fas fa-file-pdf"></i>
+                        <p>Haga clic para subir volante de empadronamiento</p>
+                        <input type="file" id="empadronamiento" name="empadronamiento" accept=".pdf" style="display: none;">
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Guardar Solicitud</button>
+                    <button type="button" class="btn" id="btn-cancelar">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Gestión de Tarjetas -->
+        <div class="tab-content" id="gestion">
+            <h2>Gestión de Tarjetas PMR</h2>
+            
+            <!-- Sección de gestión de archivos -->
+            <div class="file-management">
+                <h3><i class="fas fa-database"></i> Gestión de Datos TXT</h3>
+                
+                <div class="instruction-step">
+                    <span class="step-number">1</span>
+                    <div class="step-content">
+                        <strong>Cargar Datos del Archivo</strong>
+                        <p>Los datos se cargan automáticamente desde el archivo datos_pmr.txt</p>
+                        <button class="btn btn-primary" id="btn-cargar-servidor">
+                            <i class="fas fa-sync-alt"></i> Cargar desde Archivo
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="instruction-step">
+                    <span class="step-number">2</span>
+                    <div class="step-content">
+                        <strong>Trabajar con los datos</strong>
+                        <p>Añada nuevas solicitudes o edite las existentes</p>
+                        <p><small>Los cambios se guardarán automáticamente en el almacenamiento local</small></p>
+                    </div>
+                </div>
+                
+                <div class="instruction-step">
+                    <span class="step-number">3</span>
+                    <div class="step-content">
+                        <strong>Exportar Datos</strong>
+                        <p>Si lo prefiere, puede exportar los datos actualizados</p>
+                        <button class="btn btn-secondary" id="btn-exportar-datos">
+                            <i class="fas fa-download"></i> Exportar Datos
+                        </button>
+                    </div>
+                </div>
+
+                <div id="file-status" class="file-status info">
+                    <i class="fas fa-info-circle"></i> 
+                    <span id="file-status-text">Los datos se cargan desde el archivo datos_pmr.txt</span>
+                </div>
+                
+                <!-- Información del archivo cargado -->
+                <div id="file-info" class="file-info" style="display: none;">
+                    <i class="fas fa-file-alt"></i>
+                    Archivo cargado: <span id="loaded-file-name" class="file-name">datos_pmr.txt</span>
+                    | Registros: <span id="loaded-file-count">0</span>
+                    | Última sincronización: <span id="last-sync">-</span>
+                </div>
+
+                <div class="search-bar">
+                    <input type="text" id="buscar-tarjetas" placeholder="Buscar por nombre, DNI o número de tarjeta...">
+                    <button class="btn btn-primary" id="btn-buscar">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label for="filtro-estado">Filtrar por Estado:</label>
+                    <select id="filtro-estado">
+                        <option value="todos">Todos</option>
+                        <option value="activa">Activa</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="inactiva">Inactiva</option>
+                        <option value="rechazada">Rechazada</option>
+                    </select>
+                </div>
+
+                <table class="data-table" id="tabla-tarjetas">
+                    <thead>
+                        <tr>
+                            <th>DNI</th>
+                            <th>Nombre</th>
+                            <th>Apellidos</th>
+                            <th>Estado</th>
+                            <th>Fecha Solicitud</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo-tabla">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="card-grid" id="lista-tarjetas">
+                <!-- Las tarjetas se cargarán dinámicamente -->
+            </div>
+        </div>
+        
+        <!-- Expedición -->
+        <div class="tab-content" id="expedicion">
+            <h2>Expedición de Tarjetas PMR</h2>
+            
+            <div class="search-bar">
+                <input type="text" id="buscar-dni" placeholder="Ingrese DNI para cargar datos..." list="dni-suggestions">
+                <button class="btn btn-primary" id="btn-cargar-datos">
+                    <i class="fas fa-sync-alt"></i> Cargar Datos
+                </button>
+            </div>
+
+            <div class="dni-help">
+                <i class="fas fa-info-circle"></i>
+                <strong>DNIs disponibles:</strong> 
+                <span id="contador-dnis">0</span> registros cargados en el sistema
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span id="nombre-solicitante">-</span>
+                    <span class="status-badge status-approved">Aprobada</span>
+                </div>
+                <div class="card-body">
+                    <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+                        <div>
+                            <h4>Datos del Solicitante</h4>
+                            <p><strong>Nombre:</strong> <span id="expedicion-nombre">-</span></p>
+                            <p><strong>DNI:</strong> <span id="expedicion-dni">-</span></p>
+                            <p><strong>Fecha Nacimiento:</strong> <span id="expedicion-fecha-nac">-</span></p>
+                            <p><strong>Dirección:</strong> <span id="expedicion-direccion">-</span></p>
+                            <p><strong>Teléfono:</strong> <span id="expedicion-telefono">-</span></p>
+                            <p><strong>Email:</strong> <span id="expedicion-email">-</span></p>
+                            <p><strong>Registro de Entrada:</strong> <span id="expedicion-registro-entrada">-</span></p>
+                        </div>
+
+                        <!-- Botón para alternar entre vista frontal y trasera -->
+                        <button class="toggle-button" id="toggleView">Ver parte trasera</button>
+
+                        <!-- Tarjeta PMR - Diseño Europeo -->
+                        <div class="european-card-preview" id="tarjeta-pmr-europea">
+                            <div class="card-title-european">TARJETA DE ESTACIONAMIENTO</div>
+                            <div class="card-subtitle-european">PARA PERSONAS CON DISCAPACIDAD</div>
+                            
+                            <div class="card-content-european">
+                                <div class="left-section-european">
+                                    <div class="wheelchair-symbol-container">
+                                        <div class="wheelchair-symbol-european">
+                                            <i class="fas fa-wheelchair"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="card-details-european">
+                                        <div class="detail-item-european">
+                                            <div class="detail-label-european">VÁLIDA HASTA</div>
+                                            <div class="detail-value-european" id="preview-fechaValidez">-</div>
+                                        </div>
+                                        
+                                        <div class="detail-item-european">
+                                            <div class="detail-label-european">NÚM.</div>
+                                            <div class="detail-value-european" id="preview-numeroTarjeta">-</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Modelo de las Comunidades Europeas en la zona izquierda -->
+                                    <div class="model-text-left">
+                                        Modelo de las Comunidades Europeas
+                                    </div>
+                                </div>
+                                
+                                <div class="right-section-european">
+                                    <div class="european-stars-container">
+                                        <div class="european-stars">
+                                            <!-- Estrellas en círculo (azules) SIN FONDO -->
+                                            <div class="star" style="top: 5%; left: 50%; transform: translateX(-50%);">★</div>
+                                            <div class="star" style="top: 12%; left: 68%;">★</div>
+                                            <div class="star" style="top: 25%; left: 80%;">★</div>
+                                            <div class="star" style="top: 42%; left: 85%;">★</div>
+                                            <div class="star" style="top: 59%; left: 80%;">★</div>
+                                            <div class="star" style="top: 72%; left: 68%;">★</div>
+                                            <div class="star" style="top: 77%; left: 50%; transform: translateX(-50%);">★</div>
+                                            <div class="star" style="top: 72%; left: 32%;">★</div>
+                                            <div class="star" style="top: 59%; left: 20%;">★</div>
+                                            <div class="star" style="top: 42%; left: 15%;">★</div>
+                                            <div class="star" style="top: 25%; left: 20%;">★</div>
+                                            <div class="star" style="top: 12%; left: 32%;">★</div>
+                                            
+                                            <!-- E grande semi-transparente detrás del texto -->
+                                            <div class="country-code-background">E</div>
+                                            
+                                            <!-- Frases en diferentes idiomas dentro del círculo (azules) -->
+                                            <div class="languages-circle">
+                                                <div class="language-item">Parkeringskort</div>
+                                                <div class="language-item">Karta parkowania</div>
+                                                <div class="language-item">Tarjeta de estacionamiento</div>
+                                                <div class="language-item">Parkausweis</div>
+                                                <div class="language-item">Contrassegno di parcheggio</div>
+                                                <div class="language-item">Parkerkaart</div>
+                                                <div class="language-item">Cartão de estacionamento</div>
+                                                <div class="language-item">Pysäköintikortti</div>
+                                                <div class="language-item">Parkeringstillstånd</div>
+                                                <div class="language-item">Parking card</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Parte trasera de la tarjeta - CON FOTO DINÁMICA Y CÓDIGO QR -->
+                        <div class="card-back-container" id="tarjeta-pmr-trasera">
+                            <div class="card-back-content">
+                                <div class="card-back-header">
+                                    <div class="card-back-title">European Parking Card</div>
+                                </div>
+                                
+                                <div class="back-content-grid">
+                                    <div class="personal-data-section">
+                                        <div class="field-back">
+                                            <div class="field-label-back">Name / Nombre</div>
+                                            <div class="field-value-back" id="back-nombre">-</div>
+                                        </div>
+                                        
+                                        <div class="field-back">
+                                            <div class="field-label-back">Surname / Apellidos</div>
+                                            <div class="field-value-back" id="back-apellidos">-</div>
+                                        </div>
+                                        
+                                        <div class="field-back">
+                                            <div class="field-label-back">Date of birth / Fecha de nacimiento</div>
+                                            <div class="field-value-back" id="back-fecha-nac">-</div>
+                                        </div>
+                                        
+                                        <div class="field-back">
+                                            <div class="field-label-back">ID Number / Número de identificación</div>
+                                            <div class="field-value-back" id="back-dni">-</div>
+                                        </div>
+                                        
+                                        <div class="field-back">
+                                            <div class="field-label-back">Address / Dirección</div>
+                                            <div class="field-value-back" id="back-direccion">-</div>
+                                        </div>
+                                        
+                                        <div class="field-back">
+                                            <div class="field-label-back">Issuing authority / Autoridad expedidora</div>
+                                            <div class="field-value-back">Ayuntamiento de Madrid</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="photo-section">
+                                        <div class="photo-placeholder" id="foto-placeholder">
+                                            <img id="foto-solicitante" style="max-width: 100%; max-height: 100%; display: none;">
+                                            <span id="texto-placeholder">FOTO<br>3.5x4.5 cm</span>
+                                        </div>
+                                        <div class="signature-placeholder">
+                                            FIRMA DEL TITULAR
+                                        </div>
+                                        
+                                        <!-- Contenedor del código QR -->
+                                        <div class="qr-container">
+                                            <div class="qr-code" id="qr-code">
+                                                <!-- El código QR se generará aquí -->
+                                            </div>
+                                            <div class="qr-label" id="qr-label">CÓDIGO QR DE VERIFICACIÓN</div>
+                                        </div>
+                                        
+                                        <div style="font-size: 9px; text-align: center; margin-top: 10px; color: #003399;">
+                                            Modelo de la Unión Europea<br>
+                                            European Union Model
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="document-list">
+                        <h4>Documentación Validada</h4>
+                        <div class="document-item">
+                            <div>
+                                <i class="fas fa-check-circle" style="color: #34a853;"></i>
+                                Fotografía - <span id="nombre-foto">-</span>
+                            </div>
+                            <div class="document-actions">
+                                <button class="action-btn"><i class="fas fa-eye"></i></button>
+                                <button class="action-btn"><i class="fas fa-download"></i></button>
+                            </div>
+                        </div>
+                        <div class="document-item">
+                            <div>
+                                <i class="fas fa-check-circle" style="color: #34a853;"></i>
+                                Dictamen Médico - <span id="nombre-dictamen">-</span>
+                            </div>
+                            <div class="document-actions">
+                                <button class="action-btn"><i class="fas fa-eye"></i></button>
+                                <button class="action-btn"><i class="fas fa-download"></i></button>
+                            </div>
+                        </div>
+                        <div class="document-item">
+                            <div>
+                                <i class="fas fa-check-circle" style="color: #34a853;"></i>
+                                Volante Empadronamiento - <span id="nombre-empadronamiento">-</span>
+                            </div>
+                            <div class="document-actions">
+                                <button class="action-btn"><i class="fas fa-eye"></i></button>
+                                <button class="action-btn"><i class="fas fa-download"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selector de persona autorizada -->
+                    <div class="form-group">
+                        <label>Persona Autorizada para Firma</label>
+                        <div class="firmante-selector">
+                            <select id="selector-firmante">
+                                <option value="">Seleccione una persona autorizada...</option>
+                            </select>
+                            <div id="info-firmante" class="firmante-info" style="display: none;">
+                                <p><strong>Persona seleccionada:</strong> <span id="firmante-nombre"></span></p>
+                                <p><strong>Cargo:</strong> <span id="firmante-cargo"></span></p>
+                                <p><strong>Estado:</strong> <span id="firmante-estado" style="color: #34a853;">Disponible</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary" id="generar-resolucion">
+                        <i class="fas fa-file-pdf"></i> Generar Resolución PDF
+                    </button>
+                    <button class="btn btn-secondary" id="expedir-tarjeta-europea">
+                        <i class="fas fa-print"></i> Expedir Tarjeta Europea PDF
+                    </button>
+                    <button class="btn" id="registrar-recogida">
+                        <i class="fas fa-clipboard-check"></i> Registrar Recogida
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Verificación QR (INTERNA - Para administradores) -->
+        <div class="tab-content" id="verificacion">
+            <h2>Verificación de Tarjetas PMR (Modo Administrador)</h2>
+            
+            <div class="verificacion-container">
+                <div class="instruction-step">
+                    <span class="step-number">1</span>
+                    <div class="step-content">
+                        <strong>Verificación interna</strong>
+                        <p>Esta herramienta es para verificación interna del personal autorizado</p>
+                        <p><small>La verificación pública se realiza mediante códigos QR</small></p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dni-verificacion">DNI a Verificar *</label>
+                    <input type="text" id="dni-verificacion" placeholder="Ej: 12345678A" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha-verificacion">Fecha de Expedición (Opcional)</label>
+                    <input type="text" id="fecha-verificacion" placeholder="Ej: 2023-10-25">
+                </div>
+
+                <button class="btn btn-primary" id="btn-verificar">
+                    <i class="fas fa-search"></i> Verificar en Base de Datos
+                </button>
+
+                <div id="resultado-verificacion" class="verificacion-resultado" style="display: none;">
+                    <!-- Resultado se mostrará aquí -->
+                </div>
+            </div>
+
+            <div class="file-info">
+                <i class="fas fa-database"></i>
+                Base de datos cargada: <span id="contador-verificacion">0</span> registros disponibles para verificación
+                <br>
+                <small>Los códigos QR apuntan a: <code id="qr-url-info">https://tem.rial.com.es/old-index/buscador.php?cadena=DNI,FECHA</code></small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para configuración de PDF -->
+    <div class="modal" id="pdf-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Generar Tarjeta PMR - Formato Europeo</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="modal-numeroTarjeta">Número de Tarjeta</label>
+                <input type="text" id="modal-numeroTarjeta" value="PMR-2023-00454">
+            </div>
+            <div class="form-group">
+                <label for="modal-fechaExpedicion">Fecha de Expedición</label>
+                <input type="date" id="modal-fechaExpedicion" value="2023-10-25">
+            </div>
+            <div class="form-group">
+                <label for="modal-fechaValidez">Fecha de Validez</label>
+                <input type="date" id="modal-fechaValidez" value="2028-10-25">
+            </div>
+            <div class="form-group">
+                <label for="modal-pais">País de Expedición</label>
+                <select id="modal-pais">
+                    <option value="E" selected>España (E)</option>
+                    <option value="F">Francia (F)</option>
+                    <option value="D">Alemania (D)</option>
+                    <option value="I">Italia (I)</option>
+                    <option value="P">Portugal (P)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Persona Autorizada</label>
+                <select id="modal-firmante">
+                    <option value="">Seleccione firmante...</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="generar-pdf-completo">
+                    <i class="fas fa-file-pdf"></i> Generar PDF Completo (A4)
+                </button>
+                <button class="btn btn-secondary" id="generar-solo-tarjeta">
+                    <i class="fas fa-id-card"></i> Solo Tarjeta PDF (A7)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar tarjeta -->
+    <div class="modal" id="editar-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Tarjeta PMR</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="editar-form">
+                <input type="hidden" id="editar-dni">
+                <div class="form-group">
+                    <label for="editar-nombre">Nombre</label>
+                    <input type="text" id="editar-nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="editar-apellidos">Apellidos</label>
+                    <input type="text" id="editar-apellidos" required>
+                </div>
+                <div class="form-group">
+                    <label for="editar-fechaNacimiento">Fecha de Nacimiento</label>
+                    <input type="date" id="editar-fechaNacimiento" required>
+                </div>
+                <div class="form-group">
+                    <label for="editar-direccion">Dirección</label>
+                    <input type="text" id="editar-direccion" required>
+                </div>
+                <div class="form-group">
+                    <label for="editar-telefono">Teléfono</label>
+                    <input type="tel" id="editar-telefono" required>
+                </div>
+                <div class="form-group">
+                    <label for="editar-email">Email</label>
+                    <input type="email" id="editar-email">
+                </div>
+                <div class="form-group">
+                    <label for="editar-estado">Estado</label>
+                    <select id="editar-estado">
+                        <option value="activa">Activa</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="inactiva">Inactiva</option>
+                        <option value="rechazada">Rechazada</option>
+                    </select>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    <button type="button" class="btn" id="btn-cancelar-edicion">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vista previa de PDF -->
+    <div class="pdf-preview-container" id="pdf-preview">
+        <div class="pdf-preview-content">
+            <div class="pdf-preview-header">
+                <div class="pdf-preview-title" id="pdf-preview-title">Vista Previa del PDF</div>
+                <button class="close-preview">&times;</button>
+            </div>
+            <div class="pdf-preview-body">
+                <iframe id="pdf-preview-iframe" class="pdf-preview-iframe"></iframe>
+            </div>
+            <div class="pdf-preview-footer">
+                <button class="btn btn-primary" id="descargar-pdf">
+                    <i class="fas fa-download"></i> Descargar PDF
+                </button>
+                <button class="btn btn-secondary" id="imprimir-pdf">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <button class="btn" id="cerrar-preview">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para documento de recogida -->
+    <div class="recogida-modal" id="recogida-modal">
+        <div class="recogida-content">
+            <div class="recogida-header">
+                <div class="recogida-title">Documento de Recogida de Tarjeta PMR</div>
+                <button class="close-recogida">&times;</button>
+            </div>
+            <div class="recogida-body">
+                <div class="recogida-document" id="recogida-document">
+                    <!-- El contenido del documento se generará aquí -->
+                </div>
+            </div>
+            <div class="recogida-footer">
+                <button class="btn btn-primary" id="descargar-recogida">
+                    <i class="fas fa-download"></i> Descargar PDF
+                </button>
+                <button class="btn btn-secondary" id="imprimir-recogida">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <button class="btn" id="cerrar-recogida">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar jsPDF
+        const { jsPDF } = window.jspdf;
+        
+        // Almacén para datos de tarjetas
+        let tarjetasAlmacenadas = {};
+        const imagenesAlmacenadas = {};
+        let personasAutorizadas = [];
+        let archivoDatosCargado = false;
+        let archivoOriginal = null;
+        let nombreArchivoOriginal = '';
+        let fotoSolicitanteActual = null;
+        let pdfGenerado = null;
+        let tipoPdfActual = ''; // 'resolucion' o 'tarjeta'
+        
+        // ========== CONFIGURACIÓN ACTUALIZADA ==========
+        
+        // URLs CORREGIDAS - Ahora apunta al servidor correcto
+        const VERIFICATION_PAGE_URL = 'https://tem.rial.com.es/old-index/buscador.php';
+        const DATA_FILE_URL = 'datos_pmr.txt'; // Archivo local para datos
+        
+        let lastSyncTime = null;
+        let autoSaveEnabled = true;
+
+        // ========== FUNCIONES MEJORADAS PARA CARGAR DATOS DESDE ARCHIVO TXT ==========
+
+        // Función mejorada para cargar datos desde el archivo TXT
+        async function cargarDatosServidor() {
+            try {
+                actualizarEstadoConexion('Cargando datos...', 'connection-syncing');
+                actualizarEstadoArchivo('Cargando datos desde archivo local...', 'info');
+                
+                console.log('Intentando cargar archivo:', DATA_FILE_URL);
+                
+                const response = await fetch(DATA_FILE_URL, {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const texto = await response.text();
+                procesarDatosTXT(texto);
+                actualizarEstadoArchivo(`Datos cargados correctamente desde ${DATA_FILE_URL}`, 'success');
+                actualizarEstadoConexion('Conectado', 'connection-online');
+                return true;
+                
+            } catch (error) {
+                console.error('Error al cargar datos:', error);
+                actualizarEstadoConexion('Sin conexión', 'connection-offline');
+                actualizarEstadoArchivo('Error al cargar archivo. Usando datos locales.', 'error');
+                
+                // Usar datos locales como respaldo
+                if (cargarDatosLocales()) {
+                    actualizarEstadoArchivo('Usando datos locales de respaldo', 'info');
+                } else {
+                    usarDatosEjemplo();
+                }
+                return false;
+            }
+        }
+
+        // Función para procesar el formato TXT
+        function procesarDatosTXT(texto) {
+            const lineas = texto.split('\n').filter(linea => linea.trim());
+            const nuevosDatos = {};
+            
+            lineas.forEach(linea => {
+                // Asumiendo formato: DNI|Nombre|Apellidos|FechaNacimiento|Direccion|Telefono|Email|...
+                const partes = linea.split('|');
+                if (partes.length >= 2) {
+                    const dni = partes[0].trim();
+                    nuevosDatos[dni] = {
+                        dni: dni,
+                        nombre: partes[1] || 'Usuario',
+                        apellidos: partes[2] || dni,
+                        fechaNacimiento: partes[3] || '2000-01-01',
+                        direccion: partes[4] || 'Dirección no especificada',
+                        telefono: partes[5] || '000000000',
+                        email: partes[6] || '',
+                        estado: 'activa',
+                        fechaSolicitud: partes[7] || '2023-10-25',
+                        numeroTarjeta: `PMR-${dni}`,
+                        registroEntrada: `REG-${dni}`,
+                        fechaExpedicion: partes[7] || '2023-10-25',
+                        fechaValidez: '2028-12-31'
+                    };
+                }
+            });
+            
+            tarjetasAlmacenadas = { ...tarjetasAlmacenadas, ...nuevosDatos };
+            localStorage.setItem('tarjetasPMR', JSON.stringify(tarjetasAlmacenadas));
+            archivoDatosCargado = true;
+            
+            actualizarVistaTarjetas();
+            actualizarInfoArchivo();
+            actualizarContadorVerificacion();
+            
+            console.log('Datos procesados correctamente desde archivo TXT:', Object.keys(nuevosDatos).length, 'registros');
+        }
+
+        // Función para cargar datos locales como respaldo
+        function cargarDatosLocales() {
+            try {
+                const datosGuardados = localStorage.getItem('tarjetasPMR');
+                
+                if (datosGuardados) {
+                    tarjetasAlmacenadas = JSON.parse(datosGuardados);
+                    actualizarVistaTarjetas();
+                    actualizarContadorVerificacion();
+                    console.log('Datos cargados desde respaldo local');
+                    return true;
+                }
+            } catch (e) {
+                console.error('Error al cargar respaldo local:', e);
+            }
+            
+            return false;
+        }
+
+        // Función con datos de ejemplo como último recurso
+        function usarDatosEjemplo() {
+            tarjetasAlmacenadas = {
+                "12345678A": {
+                    dni: "12345678A",
+                    nombre: "María",
+                    apellidos: "García López",
+                    fechaNacimiento: "1975-03-15",
+                    direccion: "Calle Principal 123, Madrid",
+                    telefono: "612345678",
+                    email: "maria.garcia@email.com",
+                    estado: "activa",
+                    fechaSolicitud: "2024-01-15",
+                    numeroTarjeta: "PMR-2024-001",
+                    registroEntrada: "REG-2024-001",
+                    fechaExpedicion: "2024-01-15",
+                    fechaValidez: "2029-01-15"
+                },
+                "87654321B": {
+                    dni: "87654321B",
+                    nombre: "Carlos",
+                    apellidos: "Martínez Ruiz",
+                    fechaNacimiento: "1982-07-22",
+                    direccion: "Avenida Central 456, Barcelona",
+                    telefono: "687654321",
+                    email: "carlos.martinez@email.com",
+                    estado: "pendiente",
+                    fechaSolicitud: "2024-01-20",
+                    numeroTarjeta: "PMR-2024-002",
+                    registroEntrada: "REG-2024-002",
+                    fechaExpedicion: "2024-01-20",
+                    fechaValidez: "2029-01-20"
+                },
+                "11223344C": {
+                    dni: "11223344C",
+                    nombre: "Ana",
+                    apellidos: "Rodríguez Sánchez",
+                    fechaNacimiento: "1968-11-30",
+                    direccion: "Plaza Mayor 789, Valencia",
+                    telefono: "655443322",
+                    email: "ana.rodriguez@email.com",
+                    estado: "activa",
+                    fechaSolicitud: "2024-01-10",
+                    numeroTarjeta: "PMR-2024-003",
+                    registroEntrada: "REG-2024-003",
+                    fechaExpedicion: "2024-01-10",
+                    fechaValidez: "2029-01-10"
+                }
+            };
+            
+            actualizarVistaTarjetas();
+            actualizarContadorVerificacion();
+            console.log('Usando datos de ejemplo');
+        }
+
+        // Función para exportar datos a archivo TXT
+        function exportarDatosTXT() {
+            let contenidoTXT = '';
+            
+            for (const dni in tarjetasAlmacenadas) {
+                const tarjeta = tarjetasAlmacenadas[dni];
+                contenidoTXT += `${tarjeta.dni}|${tarjeta.nombre}|${tarjeta.apellidos}|${tarjeta.fechaNacimiento}|${tarjeta.direccion}|${tarjeta.telefono}|${tarjeta.email}|${tarjeta.fechaExpedicion}\n`;
+            }
+            
+            // Crear blob y descargar
+            const blob = new Blob([contenidoTXT], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'datos_pmr_exportado.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            actualizarEstadoArchivo('Datos exportados correctamente', 'success');
+        }
+
+        // ========== FUNCIONES PARA EL CÓDIGO QR ==========
+
+        // Función para generar el código QR con URL de verificación CORREGIDA
+        function generarQR(fechaExpedicion, dni) {
+            // URL CORREGIDA - Ahora apunta al servidor correcto
+            const urlVerificacion = `${VERIFICATION_PAGE_URL}?cadena=${dni},${fechaExpedicion}`;
+            
+            // Actualizar información de URL QR
+            document.getElementById('qr-url-info').textContent = urlVerificacion;
+            
+            // Generar el código QR con la URL
+            const tipoNumero = 0; // Tipo de código QR (0 = automático)
+            const correccionError = 'L'; // Nivel de corrección de errores (L = bajo)
+            const qr = qrcode(tipoNumero, correccionError);
+            qr.addData(urlVerificacion);
+            qr.make();
+            
+            // Obtener el código QR como imagen
+            const qrImagen = qr.createImgTag(4); // 4 = tamaño de píxel
+            
+            // Devolver el código QR
+            return qrImagen;
+        }
+
+        // ========== FUNCIONES DE VERIFICACIÓN INTERNA ==========
+
+        // Función para verificar una tarjeta (versión interna)
+        function verificarTarjetaInterna(dni, fecha = '') {
+            const resultadoDiv = document.getElementById('resultado-verificacion');
+            
+            // Verificar si el DNI existe en los datos
+            if (tarjetasAlmacenadas[dni]) {
+                const tarjeta = tarjetasAlmacenadas[dni];
+                
+                // Verificación adicional con fecha si se proporciona
+                let verificacionAdicional = '';
+                if (fecha && tarjeta.fechaExpedicion) {
+                    if (tarjeta.fechaExpedicion === fecha) {
+                        verificacionAdicional = `<p><i class="fas fa-check-circle"></i> <strong>Fecha coincidente:</strong> ${fecha}</p>`;
+                    } else {
+                        verificacionAdicional = `<p><i class="fas fa-exclamation-triangle"></i> <strong>Fecha no coincide:</strong> Esperada ${tarjeta.fechaExpedicion}, recibida ${fecha}</p>`;
+                    }
+                }
+                
+                // Determinar clase de estado
+                let claseEstado = '';
+                let textoEstado = '';
+                switch(tarjeta.estado) {
+                    case 'activa':
+                        claseEstado = 'status-approved';
+                        textoEstado = 'Activa';
+                        break;
+                    case 'pendiente':
+                        claseEstado = 'status-pending';
+                        textoEstado = 'Pendiente';
+                        break;
+                    case 'inactiva':
+                        claseEstado = 'status-inactive';
+                        textoEstado = 'Inactiva';
+                        break;
+                    case 'rechazada':
+                        claseEstado = 'status-rejected';
+                        textoEstado = 'Rechazada';
+                        break;
+                }
+                
+                // Mostrar resultado exitoso
+                resultadoDiv.innerHTML = `
+                    <div class="verificacion-exitosa">
+                        <h3><i class="fas fa-shield-check"></i> TARJETA VÁLIDA</h3>
+                        <div class="tarjeta-info">
+                            <p><strong>Nombre:</strong> ${tarjeta.nombre} ${tarjeta.apellidos}</p>
+                            <p><strong>DNI:</strong> ${tarjeta.dni}</p>
+                            <p><strong>Estado:</strong> <span class="status-badge ${claseEstado}">${textoEstado}</span></p>
+                            <p><strong>Número de Tarjeta:</strong> ${tarjeta.numeroTarjeta || 'No asignado'}</p>
+                            <p><strong>Fecha de Expedición:</strong> ${formatearFecha(tarjeta.fechaExpedicion)}</p>
+                            <p><strong>Válida hasta:</strong> ${formatearFecha(tarjeta.fechaValidez)}</p>
+                            ${verificacionAdicional}
+                        </div>
+                        <p style="margin-top: 15px; font-size: 0.9em;">
+                            <i class="fas fa-info-circle"></i> Esta tarjeta está registrada en el sistema oficial.
+                        </p>
+                    </div>
+                `;
+                resultadoDiv.style.display = 'block';
+                
+            } else {
+                // Mostrar resultado de tarjeta fraudulenta
+                resultadoDiv.innerHTML = `
+                    <div class="verificacion-error">
+                        <h3><i class="fas fa-exclamation-triangle"></i> TARJETA NO VÁLIDA</h3>
+                        <p>El DNI <strong>${dni}</strong> no está registrado en el sistema oficial de tarjetas PMR.</p>
+                        <p>Esta tarjeta podría ser fraudulenta.</p>
+                        <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
+                            <i class="fas fa-lightbulb"></i> 
+                            <strong>Recomendación:</strong> Retenga la tarjeta y contacte con las autoridades.
+                        </div>
+                    </div>
+                `;
+                resultadoDiv.style.display = 'block';
+            }
+        }
+
+        // Actualizar contador de verificación
+        function actualizarContadorVerificacion() {
+            document.getElementById('contador-verificacion').textContent = Object.keys(tarjetasAlmacenadas).length;
+            document.getElementById('contador-dnis').textContent = Object.keys(tarjetasAlmacenadas).length;
+        }
+
+        // ========== FUNCIONES AUXILIARES ==========
+        
+        // Función para actualizar el estado de conexión
+        function actualizarEstadoConexion(texto, clase) {
+            const statusElement = document.getElementById('connection-status');
+            const textElement = document.getElementById('connection-text');
+            
+            statusElement.className = `connection-status ${clase}`;
+            textElement.textContent = texto;
+        }
+
+        // Función para actualizar el estado del archivo
+        function actualizarEstadoArchivo(mensaje, tipo) {
+            const fileStatus = document.getElementById('file-status');
+            const fileStatusText = document.getElementById('file-status-text');
+            
+            fileStatus.className = `file-status ${tipo}`;
+            fileStatusText.textContent = mensaje;
+            
+            // Mostrar información adicional para éxito
+            if (tipo === 'success') {
+                const fileInfo = document.getElementById('file-info');
+                fileInfo.style.display = 'block';
+                document.getElementById('loaded-file-count').textContent = Object.keys(tarjetasAlmacenadas).length;
+                
+                if (lastSyncTime) {
+                    document.getElementById('last-sync').textContent = lastSyncTime.toLocaleTimeString();
+                }
+            }
+        }
+
+        // Función para actualizar información del archivo
+        function actualizarInfoArchivo() {
+            const fileInfo = document.getElementById('file-info');
+            const registros = Object.keys(tarjetasAlmacenadas).length;
+            
+            document.getElementById('loaded-file-count').textContent = registros;
+            
+            if (lastSyncTime) {
+                document.getElementById('last-sync').textContent = lastSyncTime.toLocaleTimeString();
+            }
+            
+            fileInfo.style.display = 'block';
+        }
+
+        // ========== FUNCIONES PARA GENERAR PDFs ==========
+
+        // Función para generar la resolución PDF
+        function generarResolucionPDF() {
+            const dni = document.getElementById('expedicion-dni').textContent;
+            const tarjeta = tarjetasAlmacenadas[dni];
+            
+            if (!tarjeta) {
+                alert('No hay datos de tarjeta cargados para generar la resolución');
+                return;
+            }
+
+            // Crear nuevo PDF
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            // Configurar fuente y colores
+            pdf.setFont('helvetica');
+            pdf.setFontSize(12);
+            
+            // Título
+            pdf.setFontSize(16);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('RESOLUCIÓN ADMINISTRATIVA', 105, 30, { align: 'center' });
+            
+            // Línea divisoria
+            pdf.setDrawColor(0, 51, 153);
+            pdf.setLineWidth(0.5);
+            pdf.line(20, 35, 190, 35);
+            
+            // Número de expediente
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`Expediente: ${tarjeta.registroEntrada || 'REG-2023-001'}`, 20, 50);
+            
+            // Fecha
+            pdf.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, 20, 60);
+            
+            // Contenido de la resolución
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('RESUELVE:', 20, 80);
+            
+            pdf.setFont('helvetica', 'normal');
+            const textoResolucion = [
+                `Conceder la Tarjeta de Estacionamiento para Personas con Movilidad Reducida a:`,
+                ``,
+                `Nombre: ${tarjeta.nombre} ${tarjeta.apellidos}`,
+                `DNI/NIE: ${tarjeta.dni}`,
+                `Fecha de Nacimiento: ${formatearFecha(tarjeta.fechaNacimiento)}`,
+                `Dirección: ${tarjeta.direccion}`,
+                ``,
+                `La presente tarjeta tendrá validez desde la fecha de expedición hasta ${formatearFecha(tarjeta.fechaValidez)}.`,
+                ``,
+                `Esta tarjeta permite el estacionamiento en zonas reservadas para personas con movilidad reducida,`,
+                `de acuerdo con la legislación vigente en materia de accesibilidad.`,
+                ``,
+                `La tarjeta es personal e intransferible, y su uso está sujeto a la normativa aplicable.`
+            ];
+            
+            let yPos = 90;
+            textoResolucion.forEach(linea => {
+                if (yPos > 250) {
+                    pdf.addPage();
+                    yPos = 20;
+                }
+                pdf.text(linea, 20, yPos);
+                yPos += 7;
+            });
+            
+            // Firma
+            const firmanteSeleccionado = document.getElementById('selector-firmante').value;
+            if (firmanteSeleccionado) {
+                yPos += 20;
+                pdf.text('Firmado digitalmente por:', 20, yPos);
+                yPos += 7;
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(firmanteSeleccionado, 20, yPos);
+                
+                // Línea de firma
+                yPos += 15;
+                pdf.setDrawColor(0, 0, 0);
+                pdf.line(20, yPos, 80, yPos);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(10);
+                pdf.text('Firma', 45, yPos + 5, { align: 'center' });
+            }
+            
+            // Guardar PDF para vista previa
+            pdfGenerado = pdf;
+            tipoPdfActual = 'resolucion';
+            
+            // Mostrar vista previa
+            mostrarVistaPreviaPDF(pdf);
+        }
+
+        // Función para generar la tarjeta europea PDF completa (delantera y trasera)
+        async function generarTarjetaEuropeaPDF() {
+            const dni = document.getElementById('expedicion-dni').textContent;
+            const tarjeta = tarjetasAlmacenadas[dni];
+            
+            if (!tarjeta) {
+                alert('No hay datos de tarjeta cargados para generar la tarjeta europea');
+                return;
+            }
+
+            try {
+                // Mostrar indicador de carga
+                document.getElementById('loading-overlay').style.display = 'flex';
+                
+                // Mostrar mensaje de procesamiento
+                const boton = document.getElementById('expedir-tarjeta-europea');
+                const textoOriginal = boton.innerHTML;
+                boton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
+                boton.disabled = true;
+
+                // Crear PDF con formato de tarjeta europea
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: [210, 148] // Dimensiones estándar de tarjeta europea
+                });
+
+                // Guardar el estado actual de visualización
+                const frontCard = document.getElementById('tarjeta-pmr-europea');
+                const backCard = document.getElementById('tarjeta-pmr-trasera');
+                const frontDisplay = frontCard.style.display;
+                const backDisplay = backCard.style.display;
+
+                // Mostrar parte delantera y capturar
+                frontCard.style.display = 'flex';
+                backCard.style.display = 'none';
+                
+                await new Promise(resolve => setTimeout(resolve, 500)); // Pequeña pausa para renderizado
+                
+                const canvasFront = await html2canvas(frontCard, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ADF3F7'
+                });
+                
+                const imgDataFront = canvasFront.toDataURL('image/jpeg', 1.0);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                
+                // Agregar parte delantera al PDF
+                pdf.addImage(imgDataFront, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                
+                // Agregar nueva página para la parte trasera
+                pdf.addPage();
+                
+                // Mostrar parte trasera y capturar
+                frontCard.style.display = 'none';
+                backCard.style.display = 'flex';
+                
+                await new Promise(resolve => setTimeout(resolve, 500)); // Pequeña pausa para renderizado
+                
+                const canvasBack = await html2canvas(backCard, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ADF3F7'
+                });
+                
+                const imgDataBack = canvasBack.toDataURL('image/jpeg', 1.0);
+                
+                // Agregar parte trasera al PDF
+                pdf.addImage(imgDataBack, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                
+                // Restaurar estado original de visualización
+                frontCard.style.display = frontDisplay;
+                backCard.style.display = backDisplay;
+                
+                // Guardar PDF para vista previa
+                pdfGenerado = pdf;
+                tipoPdfActual = 'tarjeta';
+                
+                // Ocultar indicador de carga
+                document.getElementById('loading-overlay').style.display = 'none';
+                
+                // Restaurar botón
+                boton.innerHTML = textoOriginal;
+                boton.disabled = false;
+                
+                // Mostrar vista previa
+                mostrarVistaPreviaPDF(pdf);
+                
+            } catch (error) {
+                console.error('Error al generar PDF de tarjeta europea:', error);
+                alert('Error al generar el PDF. Por favor, intente nuevamente.');
+                
+                // Ocultar indicador de carga
+                document.getElementById('loading-overlay').style.display = 'none';
+                
+                // Restaurar botón en caso de error
+                const boton = document.getElementById('expedir-tarjeta-europea');
+                boton.innerHTML = '<i class="fas fa-print"></i> Expedir Tarjeta Europea PDF';
+                boton.disabled = false;
+            }
+        }
+
+        // Función para mostrar vista previa del PDF
+        function mostrarVistaPreviaPDF(pdf) {
+            // Generar URL del PDF
+            const pdfBlob = pdf.output('blob');
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            
+            // Configurar iframe
+            const iframe = document.getElementById('pdf-preview-iframe');
+            iframe.src = pdfUrl;
+            
+            // Configurar título según el tipo
+            const title = document.getElementById('pdf-preview-title');
+            if (tipoPdfActual === 'resolucion') {
+                title.textContent = 'Vista Previa - Resolución PDF';
+            } else {
+                title.textContent = 'Vista Previa - Tarjeta Europea PDF (Delantera y Trasera)';
+            }
+            
+            // Mostrar contenedor de vista previa
+            document.getElementById('pdf-preview').style.display = 'flex';
+        }
+
+        // ========== NUEVA FUNCIÓN PARA GENERAR DOCUMENTO DE RECOGIDA ==========
+        
+        // Función para generar el documento de recogida
+        function generarDocumentoRecogida() {
+            const dni = document.getElementById('expedicion-dni').textContent;
+            const tarjeta = tarjetasAlmacenadas[dni];
+            
+            if (!tarjeta) {
+                alert('No hay datos de tarjeta cargados para generar el documento de recogida');
+                return;
+            }
+            
+            // Obtener la fecha actual
+            const fechaActual = new Date().toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            
+            // Generar el contenido del documento
+            const documentoRecogida = document.getElementById('recogida-document');
+            documentoRecogida.innerHTML = `
+                <h3>ACUSE DE RECIBO - TARJETA PMR</h3>
+                
+                <div class="recogida-info">
+                    <div class="recogida-field">
+                        <div class="recogida-label">Número de Tarjeta</div>
+                        <div class="recogida-value">${tarjeta.numeroTarjeta || 'PMR-2023-00454'}</div>
+                    </div>
+                    
+                    <div class="recogida-field">
+                        <div class="recogida-label">Fecha de Recogida</div>
+                        <div class="recogida-value">${fechaActual}</div>
+                    </div>
+                    
+                    <div class="recogida-field">
+                        <div class="recogida-label">Nombre del Titular</div>
+                        <div class="recogida-value">${tarjeta.nombre} ${tarjeta.apellidos}</div>
+                    </div>
+                    
+                    <div class="recogida-field">
+                        <div class="recogida-label">DNI/NIE</div>
+                        <div class="recogida-value">${tarjeta.dni}</div>
+                    </div>
+                    
+                    <div class="recogida-field">
+                        <div class="recogida-label">Fecha de Nacimiento</div>
+                        <div class="recogida-value">${formatearFecha(tarjeta.fechaNacimiento)}</div>
+                    </div>
+                    
+                    <div class="recogida-field">
+                        <div class="recogida-label">Dirección</div>
+                        <div class="recogida-value">${tarjeta.direccion}</div>
+                    </div>
+                    
+                    <div class="recogida-field">
+                        <div class="recogida-label">Teléfono</div>
+                        <div class="recogida-value">${tarjeta.telefono}</div>
+                    </div>
+                    
+                    <div class="recogida-field">
+                        <div class="recogida-label">Email</div>
+                        <div class="recogida-value">${tarjeta.email || 'No especificado'}</div>
+                    </div>
+                    
+                    <div class="recogida-field">
+                        <div class="recogida-label">Fecha de Expedición</div>
+                        <div class="recogida-value">${formatearFecha(tarjeta.fechaExpedicion)}</div>
+                    </div>
+                    
+                    <div class="recogida-field">
+                        <div class="recogida-label">Válida hasta</div>
+                        <div class="recogida-value">${formatearFecha(tarjeta.fechaValidez)}</div>
+                    </div>
+                </div>
+                
+                <p style="text-align: justify; margin: 20px 0;">
+                    Por medio del presente documento, <strong>${tarjeta.nombre} ${tarjeta.apellidos}</strong> 
+                    con DNI/NIE <strong>${tarjeta.dni}</strong>, reconoce haber recibido en la fecha de hoy 
+                    la Tarjeta de Estacionamiento para Personas con Movilidad Reducida con número 
+                    <strong>${tarjeta.numeroTarjeta || 'PMR-2023-00454'}</strong>, la cual es válida hasta 
+                    el <strong>${formatearFecha(tarjeta.fechaValidez)}</strong>.
+                </p>
+                
+                <p style="text-align: justify; margin: 20px 0;">
+                    El titular declara haber sido informado sobre las condiciones de uso de la tarjeta, 
+                    así como de la obligación de comunicar cualquier cambio en sus circunstancias personales 
+                    que pudiera afectar a la validez de la misma.
+                </p>
+                
+                <div class="recogida-signature">
+                    <div class="signature-area">
+                        <div class="signature-line"></div>
+                        <p>Firma del Titular</p>
+                        <p><small>${tarjeta.nombre} ${tarjeta.apellidos}</small></p>
+                        <p><small>DNI: ${tarjeta.dni}</small></p>
+                    </div>
+                    
+                    <div class="signature-area">
+                        <div class="signature-line"></div>
+                        <p>Firma del Responsable</p>
+                        <p><small>${document.getElementById('selector-firmante').value || 'Persona Autorizada'}</small></p>
+                        <p><small>Ayuntamiento de Madrid</small></p>
+                    </div>
+                </div>
+                
+                <div class="recogida-date">
+                    <p>Madrid, ${fechaActual}</p>
+                </div>
+            `;
+            
+            // Mostrar el modal
+            document.getElementById('recogida-modal').style.display = 'flex';
+        }
+        
+        // Función para generar PDF del documento de recogida
+        function generarPDFRecogida() {
+            const dni = document.getElementById('expedicion-dni').textContent;
+            const tarjeta = tarjetasAlmacenadas[dni];
+            
+            if (!tarjeta) {
+                alert('No hay datos de tarjeta cargados para generar el PDF de recogida');
+                return;
+            }
+            
+            // Crear nuevo PDF
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            // Configurar fuente y colores
+            pdf.setFont('helvetica');
+            pdf.setFontSize(12);
+            
+            // Título
+            pdf.setFontSize(16);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('ACUSE DE RECIBO - TARJETA PMR', 105, 30, { align: 'center' });
+            
+            // Línea divisoria
+            pdf.setDrawColor(0, 51, 153);
+            pdf.setLineWidth(0.5);
+            pdf.line(20, 40, 190, 40);
+            
+            // Información de la tarjeta
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'normal');
+            
+            let yPos = 60;
+            
+            // Datos de la tarjeta en dos columnas
+            const datosColumna1 = [
+                `Número de Tarjeta: ${tarjeta.numeroTarjeta || 'PMR-2023-00454'}`,
+                `Fecha de Recogida: ${new Date().toLocaleDateString('es-ES')}`,
+                `Nombre del Titular: ${tarjeta.nombre} ${tarjeta.apellidos}`,
+                `DNI/NIE: ${tarjeta.dni}`,
+                `Fecha de Nacimiento: ${formatearFecha(tarjeta.fechaNacimiento)}`
+            ];
+            
+            const datosColumna2 = [
+                `Dirección: ${tarjeta.direccion}`,
+                `Teléfono: ${tarjeta.telefono}`,
+                `Email: ${tarjeta.email || 'No especificado'}`,
+                `Fecha de Expedición: ${formatearFecha(tarjeta.fechaExpedicion)}`,
+                `Válida hasta: ${formatearFecha(tarjeta.fechaValidez)}`
+            ];
+            
+            // Primera columna
+            datosColumna1.forEach(linea => {
+                pdf.text(linea, 20, yPos);
+                yPos += 7;
+            });
+            
+            // Segunda columna
+            yPos = 60;
+            datosColumna2.forEach(linea => {
+                pdf.text(linea, 110, yPos);
+                yPos += 7;
+            });
+            
+            // Texto del acuse de recibo
+            yPos = 100;
+            const textoRecogida = [
+                `Por medio del presente documento, ${tarjeta.nombre} ${tarjeta.apellidos} con DNI/NIE ${tarjeta.dni},`,
+                `reconoce haber recibido en la fecha de hoy la Tarjeta de Estacionamiento para Personas con`,
+                `Movilidad Reducida con número ${tarjeta.numeroTarjeta || 'PMR-2023-00454'}, la cual es válida`,
+                `hasta el ${formatearFecha(tarjeta.fechaValidez)}.`,
+                ``,
+                `El titular declara haber sido informado sobre las condiciones de uso de la tarjeta, así como`,
+                `de la obligación de comunicar cualquier cambio en sus circunstancias personales que pudiera`,
+                `afectar a la validez de la misma.`
+            ];
+            
+            textoRecogida.forEach(linea => {
+                if (yPos > 250) {
+                    pdf.addPage();
+                    yPos = 20;
+                }
+                pdf.text(linea, 20, yPos);
+                yPos += 7;
+            });
+            
+            // Firmas
+            yPos += 20;
+            pdf.text('Firma del Titular:', 20, yPos);
+            pdf.text('Firma del Responsable:', 110, yPos);
+            
+            yPos += 15;
+            pdf.setDrawColor(0, 0, 0);
+            pdf.line(20, yPos, 80, yPos);
+            pdf.line(110, yPos, 170, yPos);
+            
+            yPos += 10;
+            pdf.setFontSize(10);
+            pdf.text(tarjeta.nombre + ' ' + tarjeta.apellidos, 50, yPos, { align: 'center' });
+            pdf.text(document.getElementById('selector-firmante').value || 'Persona Autorizada', 140, yPos, { align: 'center' });
+            
+            yPos += 5;
+            pdf.text('DNI: ' + tarjeta.dni, 50, yPos, { align: 'center' });
+            pdf.text('Ayuntamiento de Madrid', 140, yPos, { align: 'center' });
+            
+            // Fecha y lugar
+            yPos += 20;
+            pdf.setFontSize(12);
+            pdf.text(`Madrid, ${new Date().toLocaleDateString('es-ES')}`, 150, yPos, { align: 'right' });
+            
+            // Descargar el PDF
+            pdf.save(`recogida_${tarjeta.dni}.pdf`);
+        }
+
+        // ========== CONFIGURACIÓN DE BOTONES PDF ==========
+
+        function configurarBotonesPDF() {
+            // Botón Generar Resolución PDF
+            document.getElementById('generar-resolucion').addEventListener('click', function() {
+                generarResolucionPDF();
+            });
+
+            // Botón Expedir Tarjeta Europea PDF
+            document.getElementById('expedir-tarjeta-europea').addEventListener('click', function() {
+                generarTarjetaEuropeaPDF();
+            });
+
+            // Botones de la vista previa
+            document.getElementById('descargar-pdf').addEventListener('click', function() {
+                if (pdfGenerado) {
+                    let nombreArchivo = 'documento.pdf';
+                    if (tipoPdfActual === 'resolucion') {
+                        nombreArchivo = `resolucion_${document.getElementById('expedicion-dni').textContent}.pdf`;
+                    } else {
+                        nombreArchivo = `tarjeta_europea_${document.getElementById('expedicion-dni').textContent}.pdf`;
+                    }
+                    pdfGenerado.save(nombreArchivo);
+                }
+            });
+
+            document.getElementById('imprimir-pdf').addEventListener('click', function() {
+                const iframe = document.getElementById('pdf-preview-iframe');
+                iframe.contentWindow.print();
+            });
+
+            document.getElementById('cerrar-preview').addEventListener('click', function() {
+                document.getElementById('pdf-preview').style.display = 'none';
+                // Liberar URL del objeto
+                const iframe = document.getElementById('pdf-preview-iframe');
+                if (iframe.src) {
+                    URL.revokeObjectURL(iframe.src);
+                    iframe.src = '';
+                }
+            });
+
+            document.querySelector('.close-preview').addEventListener('click', function() {
+                document.getElementById('pdf-preview').style.display = 'none';
+                // Liberar URL del objeto
+                const iframe = document.getElementById('pdf-preview-iframe');
+                if (iframe.src) {
+                    URL.revokeObjectURL(iframe.src);
+                    iframe.src = '';
+                }
+            });
+        }
+
+        // ========== CONFIGURACIÓN DEL BOTÓN REGISTRAR RECOGIDA ==========
+        
+        function configurarBotonRecogida() {
+            // Botón Registrar Recogida
+            document.getElementById('registrar-recogida').addEventListener('click', function() {
+                generarDocumentoRecogida();
+            });
+            
+            // Botones del modal de recogida
+            document.getElementById('descargar-recogida').addEventListener('click', function() {
+                generarPDFRecogida();
+            });
+            
+            document.getElementById('imprimir-recogida').addEventListener('click', function() {
+                window.print();
+            });
+            
+            document.getElementById('cerrar-recogida').addEventListener('click', function() {
+                document.getElementById('recogida-modal').style.display = 'none';
+            });
+            
+            document.querySelector('.close-recogida').addEventListener('click', function() {
+                document.getElementById('recogida-modal').style.display = 'none';
+            });
+        }
+
+        // ========== CONFIGURACIÓN INICIAL ==========
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configurar navegación por pestañas
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    tab.classList.add('active');
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // Cargar datos específicos según la pestaña
+                    if (tabId === 'expedicion') {
+                        cargarFirmantesDesdeArchivo();
+                    } else if (tabId === 'gestion') {
+                        // Cargar datos automáticamente al entrar en gestión
+                        cargarDatosServidor();
+                    } else if (tabId === 'dashboard') {
+                        actualizarVistaTarjetas();
+                    }
+                });
+            });
+
+            // Configurar funcionalidades básicas
+            configurarSubidaArchivos();
+            configurarBotonesToggle();
+            configurarGestionArchivos();
+            configurarFormularioSolicitud();
+            configurarExpedicion();
+            configurarVerificacionInterna();
+            
+            // Configurar botones PDF
+            configurarBotonesPDF();
+            
+            // Configurar botón de recogida
+            configurarBotonRecogida();
+            
+            // Cargar datos del archivo al iniciar
+            cargarDatosServidor();
+        });
+
+        // ========== CONFIGURACIÓN DE GESTIÓN DE ARCHIVOS ==========
+
+        function configurarGestionArchivos() {
+            // Botón para cargar datos del archivo
+            document.getElementById('btn-cargar-servidor').addEventListener('click', function() {
+                cargarDatosServidor();
+            });
+
+            // Botón para exportar datos
+            document.getElementById('btn-exportar-datos').addEventListener('click', function() {
+                exportarDatosTXT();
+            });
+
+            // Botón de búsqueda
+            document.getElementById('btn-buscar').addEventListener('click', function() {
+                buscarTarjetas();
+            });
+
+            // Filtro por estado
+            document.getElementById('filtro-estado').addEventListener('change', function() {
+                filtrarTarjetasPorEstado(this.value);
+            });
+        }
+
+        function configurarFormularioSolicitud() {
+            // Formulario de nueva solicitud
+            document.getElementById('solicitud-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                guardarSolicitud();
+            });
+
+            // Botón cancelar
+            document.getElementById('btn-cancelar').addEventListener('click', function() {
+                document.getElementById('solicitud-form').reset();
+                document.getElementById('foto-preview').innerHTML = '';
+                fotoSolicitanteActual = null;
+                document.getElementById('foto-upload-area').innerHTML = `
+                    <i class="fas fa-camera"></i>
+                    <p>Haga clic para subir fotografía</p>
+                    <p><small>La imagen debe tener el mismo nombre que el DNI</small></p>
+                    <input type="file" id="foto-input" name="foto" accept=".jpg,.jpeg,.png" style="display: none;">
+                `;
+                configurarSubidaArchivos();
+            });
+        }
+
+        function configurarExpedicion() {
+            // Botón para cargar datos por DNI
+            document.getElementById('btn-cargar-datos').addEventListener('click', function() {
+                const dni = document.getElementById('buscar-dni').value.trim();
+                if (dni) {
+                    // Buscar en los datos cargados
+                    const tarjetaEnArchivo = tarjetasAlmacenadas[dni];
+                    
+                    if (tarjetaEnArchivo) {
+                        cargarParaExpedicion(dni);
+                    } else {
+                        alert('No se encontró ninguna tarjeta con el DNI: ' + dni + '\n\nAsegúrese de haber cargado los datos desde el archivo');
+                    }
+                } else {
+                    alert('Por favor, ingrese un DNI');
+                }
+            });
+
+            // Enter en el campo de búsqueda
+            document.getElementById('buscar-dni').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('btn-cargar-datos').click();
+                }
+            });
+        }
+
+        function configurarVerificacionInterna() {
+            // Botón de verificación interna
+            document.getElementById('btn-verificar').addEventListener('click', function() {
+                const dni = document.getElementById('dni-verificacion').value.trim();
+                const fecha = document.getElementById('fecha-verificacion').value.trim();
+                
+                if (!dni) {
+                    alert('Por favor, ingrese al menos el DNI para verificar');
+                    return;
+                }
+                
+                verificarTarjetaInterna(dni, fecha);
+            });
+        }
+
+        function configurarBotonesToggle() {
+            // Botón toggle en Expedición
+            const toggleButton = document.getElementById('toggleView');
+            if (toggleButton) {
+                toggleButton.addEventListener('click', function() {
+                    const frontCard = document.getElementById('tarjeta-pmr-europea');
+                    const backCard = document.getElementById('tarjeta-pmr-trasera');
+                    
+                    if (frontCard.style.display === 'none') {
+                        // Mostrar parte delantera, ocultar trasera
+                        frontCard.style.display = 'flex';
+                        backCard.style.display = 'none';
+                        toggleButton.textContent = 'Ver parte trasera';
+                    } else {
+                        // Mostrar parte trasera, ocultar delantera
+                        frontCard.style.display = 'none';
+                        backCard.style.display = 'flex';
+                        toggleButton.textContent = 'Ver parte delantera';
+                    }
+                });
+            }
+        }
+
+        function configurarSubidaArchivos() {
+            // Configurar subida de archivos
+            const fotoUploadArea = document.getElementById('foto-upload-area');
+            const fotoInput = document.getElementById('foto-input');
+            
+            if (fotoUploadArea && fotoInput) {
+                fotoUploadArea.addEventListener('click', function() {
+                    fotoInput.click();
+                });
+                
+                fotoInput.addEventListener('change', function(e) {
+                    if (this.files && this.files[0]) {
+                        const file = this.files[0];
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            fotoSolicitanteActual = e.target.result;
+                            document.getElementById('foto-preview').innerHTML = `
+                                <img src="${e.target.result}" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+                                <p><small>Imagen cargada: ${file.name}</small></p>
+                            `;
+                        };
+                        
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        }
+
+        function guardarSolicitud() {
+            const dni = document.getElementById('dni').value;
+            const nombre = document.getElementById('nombre').value;
+            const apellidos = document.getElementById('apellidos').value;
+            
+            // Validar campos requeridos
+            if (!dni || !nombre || !apellidos) {
+                alert('Por favor, complete los campos obligatorios: DNI, Nombre y Apellidos');
+                return;
+            }
+
+            const formData = {
+                dni: dni,
+                nombre: nombre,
+                apellidos: apellidos,
+                fechaNacimiento: document.getElementById('fechaNacimiento').value,
+                direccion: document.getElementById('direccion').value,
+                telefono: document.getElementById('telefono').value,
+                email: document.getElementById('email').value,
+                estado: document.getElementById('estado').value,
+                fechaSolicitud: new Date().toISOString().split('T')[0],
+                numeroTarjeta: `PMR-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+                tieneFoto: !!fotoSolicitanteActual,
+                // Añadir registro de entrada con formato automático
+                registroEntrada: `REG-${new Date().getFullYear()}-${String(Object.keys(tarjetasAlmacenadas).length + 1).padStart(4, '0')}`,
+                fechaExpedicion: new Date().toISOString().split('T')[0],
+                fechaValidez: new Date(new Date().getFullYear() + 5, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0]
+            };
+
+            // GUARDAR EN EL ALMACÉN PRINCIPAL
+            tarjetasAlmacenadas[formData.dni] = formData;
+            
+            // GUARDAR LA FOTO SI EXISTE
+            if (fotoSolicitanteActual) {
+                imagenesAlmacenadas[formData.dni] = fotoSolicitanteActual;
+            }
+            
+            // ACTUALIZAR TODAS LAS VISTAS INMEDIATAMENTE
+            actualizarVistaTarjetas();
+            actualizarContadorVerificacion();
+            
+            // GUARDAR EN LOCAL STORAGE
+            localStorage.setItem('tarjetasPMR', JSON.stringify(tarjetasAlmacenadas));
+            
+            // Resetear formulario
+            document.getElementById('solicitud-form').reset();
+            document.getElementById('foto-preview').innerHTML = '';
+            fotoSolicitanteActual = null;
+            
+            // Restaurar área de subida
+            document.getElementById('foto-upload-area').innerHTML = `
+                <i class="fas fa-camera"></i>
+                <p>Haga clic para subir fotografía</p>
+                <p><small>La imagen debe tener el mismo nombre que el DNI</small></p>
+                <input type="file" id="foto-input" name="foto" accept=".jpg,.jpeg,.png" style="display: none;">
+            `;
+            configurarSubidaArchivos();
+            
+            // MOSTRAR CONFIRMACIÓN CON EL DNI PARA FACILITAR LA BÚSQUEDA
+            alert(`✅ Solicitud guardada correctamente\n\n📋 DNI: ${formData.dni}\n👤 Nombre: ${formData.nombre} ${formData.apellidos}\n\nPuede usar este DNI en la pestaña "Expedición" para cargar los datos`);
+            
+            // OPCIONAL: Cambiar automáticamente a expedición
+            setTimeout(() => {
+                const confirmar = confirm('¿Desea ir a la pestaña Expedición para generar la tarjeta?');
+                if (confirmar) {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.querySelector('[data-tab="expedicion"]').classList.add('active');
+                    document.getElementById('expedicion').classList.add('active');
+                    
+                    // Poner el DNI en el campo de búsqueda
+                    document.getElementById('buscar-dni').value = formData.dni;
+                }
+            }, 1000);
+        }
+
+        function generarYMostrarQR(tarjeta) {
+            const fechaExpedicion = tarjeta.fechaExpedicion || new Date().toISOString().split('T')[0];
+            const dni = tarjeta.dni;
+            
+            // Generar el código QR con URL de verificación CORREGIDA
+            const qrImagen = generarQR(fechaExpedicion, dni);
+            
+            // Mostrar el código QR en la parte trasera de la tarjeta
+            const qrContainer = document.getElementById('qr-code');
+            qrContainer.innerHTML = qrImagen;
+            
+            // Ocultar la etiqueta "CÓDIGO QR DE VERIFICACIÓN"
+            const qrLabel = document.getElementById('qr-label');
+            qrLabel.style.display = 'none';
+            
+            // Mostrar información de depuración (opcional)
+            console.log("URL de verificación generada:", `${VERIFICATION_PAGE_URL}?cadena=${dni},${fechaExpedicion}`);
+        }
+
+        function mostrarFotoEnTarjeta(dni) {
+            const fotoPlaceholder = document.getElementById('foto-placeholder');
+            const fotoSolicitante = document.getElementById('foto-solicitante');
+            const textoPlaceholder = document.getElementById('texto-placeholder');
+            
+            if (imagenesAlmacenadas[dni]) {
+                // Mostrar la foto
+                fotoSolicitante.src = imagenesAlmacenadas[dni];
+                fotoSolicitante.style.display = 'block';
+                textoPlaceholder.style.display = 'none';
+                
+                // Asegurar que la foto se ajuste correctamente
+                fotoSolicitante.style.maxWidth = '100%';
+                fotoSolicitante.style.maxHeight = '100%';
+                fotoSolicitante.style.objectFit = 'cover';
+            } else {
+                // Si no hay foto, mostrar placeholder
+                fotoSolicitante.style.display = 'none';
+                textoPlaceholder.style.display = 'block';
+                textoPlaceholder.innerHTML = 'FOTO<br>3.5x4.5 cm<br><small style="color: #999;">No cargada</small>';
+            }
+        }
+
+        function cargarFirmantesDesdeArchivo() {
+            const selector = document.getElementById('selector-firmante');
+            const selectorModal = document.getElementById('modal-firmante');
+            
+            // Mostrar estado de carga
+            selector.innerHTML = '<option value="">Cargando personas autorizadas.</option>';
+            selectorModal.innerHTML = '<option value="">Cargando firmantes.</option>';
+            
+            // En un entorno real, cargaríamos desde el servidor
+            // Por ahora, usamos datos de ejemplo
+            setTimeout(() => {
+                cargarDatosEjemploFirmantes();
+            }, 500);
+        }
+
+        function cargarDatosEjemploFirmantes() {
+            personasAutorizadas = [
+                { nombre: "Juan Pérez García", cargo: "Jefe de Servicio", disponible: "si" },
+                { nombre: "María López Martínez", cargo: "Directora General", disponible: "si" },
+                { nombre: "Carlos Rodríguez Sánchez", cargo: "Coordinador", disponible: "no" },
+                { nombre: "Ana García Fernández", cargo: "Subdirectora", disponible: "si" },
+                { nombre: "Pedro Martínez López", cargo: "Técnico Superior", disponible: "si" }
+            ];
+            cargarFirmantesDisponibles();
+        }
+
+        function cargarFirmantesDisponibles() {
+            const selector = document.getElementById('selector-firmante');
+            const selectorModal = document.getElementById('modal-firmante');
+            
+            // Limpiar selectores
+            selector.innerHTML = '<option value="">Seleccione una persona autorizada.</option>';
+            selectorModal.innerHTML = '<option value="">Seleccione firmante.</option>';
+            
+            // Filtrar solo los disponibles (con "si")
+            const firmantesDisponibles = personasAutorizadas.filter(persona => 
+                persona.disponible === "si" || persona.disponible === "sí"
+            );
+
+            for (const persona of firmantesDisponibles) {
+                const opt = document.createElement('option');
+                opt.value = persona.nombre;
+                opt.textContent = `${persona.nombre} - ${persona.cargo}`;
+                selector.appendChild(opt);
+
+                const optModal = document.createElement('option');
+                optModal.value = persona.nombre;
+                optModal.textContent = `${persona.nombre} - ${persona.cargo}`;
+                selectorModal.appendChild(optModal);
+            }
+
+            selector.addEventListener('change', function() {
+                const seleccionado = personasAutorizadas.find(p => p.nombre === this.value);
+                if (seleccionado) {
+                    document.getElementById('info-firmante').style.display = 'block';
+                    document.getElementById('firmante-nombre').textContent = seleccionado.nombre;
+                    document.getElementById('firmante-cargo').textContent = seleccionado.cargo;
+                    document.getElementById('firmante-estado').textContent = seleccionado.disponible === 'si' ? 'Disponible' : 'No disponible';
+                } else {
+                    document.getElementById('info-firmante').style.display = 'none';
+                }
+            });
+        }
+
+        function buscarTarjetas() {
+            const termino = document.getElementById('buscar-tarjetas').value.trim().toLowerCase();
+            if (!termino) {
+                actualizarVistaTarjetas();
+                return;
+            }
+
+            const resultados = {};
+            for (const dni in tarjetasAlmacenadas) {
+                const t = tarjetasAlmacenadas[dni];
+                if (
+                    (t.nombre && t.nombre.toLowerCase().includes(termino)) ||
+                    (t.apellidos && t.apellidos.toLowerCase().includes(termino)) ||
+                    (t.dni && t.dni.toLowerCase().includes(termino)) ||
+                    (t.numeroTarjeta && t.numeroTarjeta.toLowerCase().includes(termino))
+                ) {
+                    resultados[dni] = t;
+                }
+            }
+
+            actualizarVistaTarjetas(resultados);
+        }
+
+        function filtrarTarjetasPorEstado(estado) {
+            if (estado === 'todos') {
+                actualizarVistaTarjetas();
+                return;
+            }
+
+            const resultados = {};
+            for (const dni in tarjetasAlmacenadas) {
+                const t = tarjetasAlmacenadas[dni];
+                if (t.estado === estado) {
+                    resultados[dni] = t;
+                }
+            }
+
+            actualizarVistaTarjetas(resultados);
+        }
+
+        function actualizarVistaTarjetas(datos = null) {
+            const datosAMostrar = datos || tarjetasAlmacenadas;
+            // Actualizar dashboard
+            const total = Object.keys(tarjetasAlmacenadas).length;
+            const activas = Object.values(tarjetasAlmacenadas).filter(t => t.estado === 'activa').length;
+            const pendientes = Object.values(tarjetasAlmacenadas).filter(t => t.estado === 'pendiente').length;
+            
+            document.getElementById('total-tarjetas').textContent = activas;
+            document.getElementById('solicitudes-pendientes').textContent = pendientes;
+            document.getElementById('expedidas-mes').textContent = total;
+            document.getElementById('renovaciones-pendientes').textContent = 0;
+            document.getElementById('contador-dnis').textContent = Object.keys(tarjetasAlmacenadas).length;
+
+            // Actualizar tabla y card grid
+            actualizarTabla(datosAMostrar);
+            actualizarCardGrid(datosAMostrar);
+        }
+
+        function actualizarTabla(datos) {
+            const tbody = document.getElementById('cuerpo-tabla');
+            tbody.innerHTML = '';
+
+            for (const dni in datos) {
+                const tarjeta = datos[dni];
+                const fila = document.createElement('tr');
+                
+                // Determinar clase de estado
+                let claseEstado = '';
+                let textoEstado = '';
+                switch(tarjeta.estado) {
+                    case 'activa':
+                        claseEstado = 'status-approved';
+                        textoEstado = 'Activa';
+                        break;
+                    case 'pendiente':
+                        claseEstado = 'status-pending';
+                        textoEstado = 'Pendiente';
+                        break;
+                    case 'inactiva':
+                        claseEstado = 'status-inactive';
+                        textoEstado = 'Inactiva';
+                        break;
+                    case 'rechazada':
+                        claseEstado = 'status-rejected';
+                        textoEstado = 'Rechazada';
+                        break;
+                }
+                
+                fila.innerHTML = `
+                    <td>${tarjeta.dni}</td>
+                    <td>${tarjeta.nombre}</td>
+                    <td>${tarjeta.apellidos}</td>
+                    <td><span class="status-badge ${claseEstado}">${textoEstado}</span></td>
+                    <td>${formatearFecha(tarjeta.fechaSolicitud)}</td>
+                    <td>
+                        <button class="action-btn" onclick="editarTarjeta('${tarjeta.dni}')" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn" onclick="eliminarTarjeta('${tarjeta.dni}')" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(fila);
+            }
+        }
+
+        function actualizarCardGrid(datos = null) {
+            const cardGrid = document.getElementById('lista-tarjetas');
+            cardGrid.innerHTML = '';
+            
+            const setDatos = datos || tarjetasAlmacenadas;
+            let tarjetasMostradas = 0;
+            
+            for (const dni in setDatos) {
+                const tarjeta = setDatos[dni];
+                tarjetasMostradas++;
+                
+                // Determinar clase de estado
+                let claseEstado = '';
+                let textoEstado = '';
+                switch(tarjeta.estado) {
+                    case 'activa':
+                        claseEstado = 'status-approved';
+                        textoEstado = 'Activa';
+                        break;
+                    case 'pendiente':
+                        claseEstado = 'status-pending';
+                        textoEstado = 'Pendiente';
+                        break;
+                    case 'inactiva':
+                        claseEstado = 'status-inactive';
+                        textoEstado = 'Inactiva';
+                        break;
+                    case 'rechazada':
+                        claseEstado = 'status-rejected';
+                        textoEstado = 'Rechazada';
+                        break;
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span>${tarjeta.nombre} ${tarjeta.apellidos}</span>
+                        <span class="status-badge ${claseEstado}">${textoEstado}</span>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>DNI:</strong> ${tarjeta.dni}</p>
+                        <p><strong>Teléfono:</strong> ${tarjeta.telefono}</p>
+                        <p><strong>Email:</strong> ${tarjeta.email || 'No especificado'}</p>
+                        <p><strong>Fecha Solicitud:</strong> ${formatearFecha(tarjeta.fechaSolicitud)}</p>
+                        <p><strong>Registro Entrada:</strong> ${tarjeta.registroEntrada || 'No asignado'}</p>
+                        ${tarjeta.numeroTarjeta ? `<p><strong>Número Tarjeta:</strong> ${tarjeta.numeroTarjeta}</p>` : ''}
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary" onclick="cargarParaExpedicion('${tarjeta.dni}')">
+                            <i class="fas fa-print"></i> Expedir
+                        </button>
+                        <button class="btn" onclick="editarTarjeta('${tarjeta.dni}')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                    </div>
+                `;
+                
+                cardGrid.appendChild(card);
+            }
+            
+            if (tarjetasMostradas === 0) {
+                cardGrid.innerHTML = '<p style="text-align: center; padding: 20px; grid-column: 1 / -1;">No se encontraron tarjetas</p>';
+            }
+        }
+
+        // ========== FUNCIONES AUXILIARES ==========
+
+        function formatearFecha(fechaISO) {
+            if (!fechaISO) return '-';
+            try {
+                const fecha = new Date(fechaISO);
+                return fecha.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (e) {
+                return fechaISO;
+            }
+        }
+
+        function editarTarjeta(dni) {
+            const tarjeta = tarjetasAlmacenadas[dni];
+            if (!tarjeta) {
+                alert('Tarjeta no encontrada.');
+                return;
+            }
+
+            document.getElementById('editar-dni').value = tarjeta.dni;
+            document.getElementById('editar-nombre').value = tarjeta.nombre;
+            document.getElementById('editar-apellidos').value = tarjeta.apellidos;
+            document.getElementById('editar-fechaNacimiento').value = tarjeta.fechaNacimiento;
+            document.getElementById('editar-direccion').value = tarjeta.direccion;
+            document.getElementById('editar-telefono').value = tarjeta.telefono;
+            document.getElementById('editar-email').value = tarjeta.email;
+            document.getElementById('editar-estado').value = tarjeta.estado || 'pendiente';
+
+            // Mostrar modal de edición
+            const editarModal = document.getElementById('editar-modal');
+            editarModal.style.display = 'flex';
+
+            // Manejar cierre
+            editarModal.querySelector('.close-modal').addEventListener('click', function() {
+                editarModal.style.display = 'none';
+            });
+
+            // Guardar cambios
+            document.getElementById('editar-form').onsubmit = function(e) {
+                e.preventDefault();
+                const dniEdit = document.getElementById('editar-dni').value;
+                if (!tarjetasAlmacenadas[dniEdit]) {
+                    alert('Tarjeta no encontrada.');
+                    return;
+                }
+                tarjetasAlmacenadas[dniEdit].nombre = document.getElementById('editar-nombre').value;
+                tarjetasAlmacenadas[dniEdit].apellidos = document.getElementById('editar-apellidos').value;
+                tarjetasAlmacenadas[dniEdit].fechaNacimiento = document.getElementById('editar-fechaNacimiento').value;
+                tarjetasAlmacenadas[dniEdit].direccion = document.getElementById('editar-direccion').value;
+                tarjetasAlmacenadas[dniEdit].telefono = document.getElementById('editar-telefono').value;
+                tarjetasAlmacenadas[dniEdit].email = document.getElementById('editar-email').value;
+                tarjetasAlmacenadas[dniEdit].estado = document.getElementById('editar-estado').value;
+
+                editarModal.style.display = 'none';
+                actualizarVistaTarjetas();
+
+                // Guardar en localStorage
+                localStorage.setItem('tarjetasPMR', JSON.stringify(tarjetasAlmacenadas));
+            };
+
+            document.getElementById('btn-cancelar-edicion').onclick = function() {
+                editarModal.style.display = 'none';
+            };
+        }
+
+        function eliminarTarjeta(dni) {
+            if (!confirm('¿Confirmas que deseas eliminar la tarjeta con DNI ' + dni + ' ?')) return;
+            delete tarjetasAlmacenadas[dni];
+            delete imagenesAlmacenadas[dni];
+            actualizarVistaTarjetas();
+            actualizarContadorVerificacion();
+
+            // Guardar en localStorage
+            localStorage.setItem('tarjetasPMR', JSON.stringify(tarjetasAlmacenadas));
+        }
+
+        function cargarParaExpedicion(dni) {
+            const tarjeta = tarjetasAlmacenadas[dni];
+            if (tarjeta) {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelector('[data-tab="expedicion"]').classList.add('active');
+                document.getElementById('expedicion').classList.add('active');
+
+                // Cargar datos en el formulario de expedición
+                document.getElementById('expedicion-nombre').textContent = tarjeta.nombre;
+                document.getElementById('expedicion-dni').textContent = tarjeta.dni;
+                document.getElementById('expedicion-fecha-nac').textContent = formatearFecha(tarjeta.fechaNacimiento);
+                document.getElementById('expedicion-direccion').textContent = tarjeta.direccion;
+                document.getElementById('expedicion-telefono').textContent = tarjeta.telefono;
+                document.getElementById('expedicion-email').textContent = tarjeta.email || 'No especificado';
+                document.getElementById('expedicion-registro-entrada').textContent = tarjeta.registroEntrada || 'No asignado';
+                document.getElementById('nombre-solicitante').textContent = `${tarjeta.nombre} ${tarjeta.apellidos}`;
+                
+                // Actualizar vista previa de la tarjeta
+                document.getElementById('preview-numeroTarjeta').textContent = tarjeta.numeroTarjeta || 'PMR-2023-00454';
+                document.getElementById('preview-fechaValidez').textContent = formatearFecha(tarjeta.fechaValidez) || '31/12/2028';
+                
+                // Actualizar parte trasera
+                document.getElementById('back-nombre').textContent = tarjeta.nombre;
+                document.getElementById('back-apellidos').textContent = tarjeta.apellidos;
+                document.getElementById('back-fecha-nac').textContent = formatearFecha(tarjeta.fechaNacimiento);
+                document.getElementById('back-dni').textContent = tarjeta.dni;
+                document.getElementById('back-direccion').textContent = tarjeta.direccion;
+                
+                // Actualizar nombres de documentos
+                document.getElementById('nombre-foto').textContent = `foto_${tarjeta.dni}.jpg`;
+                document.getElementById('nombre-dictamen').textContent = `dictamen_${tarjeta.dni}.pdf`;
+                document.getElementById('nombre-empadronamiento').textContent = `empadronamiento_${tarjeta.dni}.pdf`;
+                
+                // MOSTRAR LA FOTO EN LA PARTE TRASERA DE LA TARJETA
+                mostrarFotoEnTarjeta(dni);
+                
+                // GENERAR Y MOSTRAR EL CÓDIGO QR CON URL DE VERIFICACIÓN CORREGIDA
+                generarYMostrarQR(tarjeta);
+                
+                // Cargar firmantes automáticamente
+                cargarFirmantesDesdeArchivo();
+            } else {
+                alert('No se encontró ninguna tarjeta con el DNI: ' + dni);
+            }
+        }
+    </script>
+</body>
+</html>
